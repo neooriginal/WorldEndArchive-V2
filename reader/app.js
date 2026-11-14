@@ -48,7 +48,8 @@
         }
         const res = await fetch(url, { cache: "no-store" });
         if (!res.ok) throw new Error("HTTP " + res.status);
-        const total = +res.headers.get("content-length") || 0;
+        // with compression (e.g. GitHub Pages) content-length is the compressed size, not what we receive
+        const total = res.headers.get("content-encoding") ? 0 : (+res.headers.get("content-length") || 0);
         const reader = res.body.getReader(), parts = [];
         let got = 0;
         for (;;) {
@@ -56,7 +57,9 @@
             if (done) break;
             parts.push(value);
             got += value.length;
-            progress(`Downloading the archive… ${(got / 1e6).toFixed(0)}${total ? " / " + (total / 1e6).toFixed(0) : ""} MB`, total ? got / total : null);
+            const known = total && got <= total;
+            progress(`Downloading the archive… ${(got / 1e6).toFixed(0)}${known ? " / " + (total / 1e6).toFixed(0) : ""} MB`,
+                     known ? got / total : 1 - Math.exp(-got / 4e7));
         }
         const buf = new Uint8Array(got);
         let o = 0;
