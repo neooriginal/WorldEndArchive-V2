@@ -1,0 +1,6 @@
+.DS_Store
+node_modules/
+*.db-journal
+*.db-wal
+*.db-shm
+*.part

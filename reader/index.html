@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#050505">
+    <title>WorldEndArchive</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1><a href="#/">WorldEndArchive</a></h1>
+            <p class="subtitle">Preserving knowledge for the future.</p>
+        </header>
+
+        <!-- loading / picking the database -->
+        <section id="boot" class="glass">
+            <p id="boot-msg">Opening the archive…</p>
+            <div class="bar"><div id="boot-bar"></div></div>
+            <div id="boot-pick" class="hidden">
+                <p class="muted">The archive file could not be loaded automatically. This happens when the page is
+                    opened straight from a folder on a phone or computer. Pick the file yourself:</p>
+                <label class="button">Open archive file (.db)<input type="file" id="file" accept=".db,.sqlite,application/octet-stream"></label>
+            </div>
+        </section>
+
+        <div id="app" class="hidden">
+            <div class="search-box">
+                <input type="search" id="search-input" placeholder="Search the archive…" autocomplete="off" enterkeyhint="search">
+                <div class="lang" role="group" aria-label="Language">
+                    <button data-lang="en">EN</button><button data-lang="de">DE</button>
+                </div>
+            </div>
+            <nav id="cats" class="chips"></nav>
+            <main id="view"></main>
+        </div>
+
+        <footer>
+            <p id="db-info" class="mono"></p>
+            <p>Knowledge from Wikipedia, Wikibooks &amp; public-domain manuals · CC BY-SA 4.0 · Stay safe.</p>
+        </footer>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="vendor/sql-wasm.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
