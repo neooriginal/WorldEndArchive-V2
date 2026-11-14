@@ -26,8 +26,7 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - uses: android-actions/setup-android@v3
-
+      # the Android SDK is preinstalled on GitHub's ubuntu runners (ANDROID_HOME)
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Signing key (optional - see README)
