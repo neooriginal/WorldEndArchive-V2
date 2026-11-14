@@ -5,3 +5,4 @@ app/build/
 .kotlin/
 *.keystore
 *.jks
+!app/debug.keystore

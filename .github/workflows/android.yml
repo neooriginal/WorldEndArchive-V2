@@ -37,7 +37,7 @@ jobs:
             echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
             echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
           else
-            echo "::warning::No ANDROID_KEYSTORE_BASE64 secret - APK is signed with a throwaway debug key (installs fine, but updates need an uninstall first)."
+            echo "No release key secret - signing with the shared debug key in android/app/debug.keystore."
           fi
 
       - name: Build release APK

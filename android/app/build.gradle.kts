@@ -26,6 +26,14 @@ android {
     }
 
     signingConfigs {
+        // Shared debug key, committed on purpose (passwords are Android's public defaults): every build - local or CI -
+        // is signed with the same key, so new APKs install over old ones. Not a secret, not for app stores.
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
         // CI: set the repo secrets ANDROID_KEYSTORE_BASE64 / _PASSWORD / ANDROID_KEY_ALIAS / ANDROID_KEY_PASSWORD
         // so every release is signed with the same key (needed to update the app in place).
         create("release") {
