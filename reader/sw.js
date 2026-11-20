@@ -1,6 +1,6 @@
 // Keeps the reader itself available offline. The archive file is cached separately by app.js
 // (it checks for a newer export on every visit while online).
-const CACHE = "wea-shell-v2";
+const CACHE = "wea-shell-v3";
 const SHELL = ["./", "index.html", "style.css", "app.js", "config.js", "vendor/sql-wasm.js", "vendor/sql-wasm.wasm", "vendor/sql-wasm-b64.js",
     "vendor/httpvfs/index.js", "vendor/httpvfs/sqlite.worker.js", "vendor/httpvfs/sql-wasm.wasm",
     "manifest.webmanifest", "icon.svg"];

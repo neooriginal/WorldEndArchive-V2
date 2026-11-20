@@ -1,0 +1,1 @@
+Patched (WorldEndArchive): doXHR splits reads that span two server chunks.

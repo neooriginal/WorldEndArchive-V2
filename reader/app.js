@@ -94,7 +94,7 @@
     async function openLazy() {
         progress("Connecting to the archive…", 0.3);
         const worker = await createDbWorker([{ from: "jsonconfig", configUrl: new URL(CFG.lazy, location.href).toString() }],
-            new URL("vendor/httpvfs/sqlite.worker.js", location.href).toString(),
+            new URL("vendor/httpvfs/sqlite.worker.js?v=2", location.href).toString(),
             new URL("vendor/httpvfs/sql-wasm.wasm", location.href).toString());
         lazy = worker.db;
         await q("SELECT 1 FROM light LIMIT 1");
@@ -194,7 +194,7 @@
 
     function essentials(offset) {
         return q(`SELECT ${LIST_COLS} FROM ${T()} e WHERE e.lang = ? ORDER BY e.importance DESC,
-                  CASE WHEN e.kind = 'howto' THEN 0 ELSE 1 END, e.title LIMIT ? OFFSET ?`, [lang, CFG.resultsPerPage, offset]);
+                  e.kind, e.title LIMIT ? OFFSET ?`, [lang, CFG.resultsPerPage, offset]);
     }
 
     // ---------- UI ----------
