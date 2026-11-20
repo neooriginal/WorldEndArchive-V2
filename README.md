@@ -37,8 +37,8 @@ No server. No signal. No power grid. Just a phone and the knowledge of those who
 <details>
 <summary><strong>In your browser</strong></summary>
 
-Visit the archive's GitHub Pages site. Open it once while the world is still connected - from then on it
-stays with you, even offline. "Add to Home Screen" keeps it one tap away.
+Visit the archive's [GitHub Pages site](https://neooriginal.github.io/WorldEndArchive-V2/). Nothing to download -
+it reads only the pages you open, straight from the archive. For the days without a connection, take the app.
 
 </details>
 
@@ -56,8 +56,8 @@ safe water, what to do when lost, and how to call for help.
 <details>
 <summary><strong>Keep it current</strong></summary>
 
-The whole archive lives in a single file: `reader/data/archive.db`.
-Replace it with a newer one and push - the website and the app rebuild themselves.
+The whole archive lives in a single file, `archive.db.gz`, kept in the [Archive data](../../releases/tag/archive-data)
+release. Replace it with a newer one and run the workflows - the website and the app rebuild themselves.
 
 </details>
 

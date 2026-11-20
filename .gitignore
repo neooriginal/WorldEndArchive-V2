@@ -4,3 +4,5 @@ node_modules/
 *.db-wal
 *.db-shm
 *.part
+reader/data/archive.db
+reader/data/archive/

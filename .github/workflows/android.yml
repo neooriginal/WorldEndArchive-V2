@@ -1,4 +1,4 @@
-# Builds the offline Android app (with reader/data/archive.db baked in) on every push and publishes the APK as a release.
+# Builds the offline Android app (with the archive from the "archive-data" release baked in) on every push and publishes the APK as a release.
 name: Build Android APK
 
 on:
@@ -39,6 +39,11 @@ jobs:
           else
             echo "No release key secret - signing with the shared debug key in android/app/debug.keystore."
           fi
+
+      - name: Fetch the archive
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download archive-data -p archive.db.gz -O - | gunzip > reader/data/archive.db
 
       - name: Build release APK
         working-directory: android

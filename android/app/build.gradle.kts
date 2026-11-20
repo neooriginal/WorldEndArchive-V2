@@ -58,7 +58,6 @@ android {
     }
 
     sourceSets["main"].assets.srcDir(archiveDir)
-    androidResources { noCompress += "db" }     // copied to storage once, uncompressed = fast first start
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

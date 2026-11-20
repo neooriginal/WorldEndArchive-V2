@@ -1,12 +1,12 @@
 /* WorldEndArchive reader: a static page that opens the archive SQLite file in the browser (sql.js) and searches
    it with the built-in full-text index. No server, no internet needed once loaded. */
 (() => {
-    const CFG = Object.assign({ db: "data/archive.db", defaultLang: "en", resultsPerPage: 40 }, window.ARCHIVE_CONFIG);
+    const CFG = Object.assign({ db: "data/archive.db", lazy: null, defaultLang: "en", resultsPerPage: 40 }, window.ARCHIVE_CONFIG);
     const $ = (id) => document.getElementById(id);
     const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
     const store = { get(k, d) { try { return localStorage.getItem(k) ?? d; } catch { return d; } },
                     set(k, v) { try { localStorage.setItem(k, v); } catch { } } };
-    let db, lang = store.get("wea-lang", CFG.defaultLang), cats = [];
+    let db, lazy, lang = store.get("wea-lang", CFG.defaultLang), cats = [];
 
     // ---------- boot: load sql.js, then the archive file (cached for offline use) ----------
     function progress(msg, frac) {
@@ -79,6 +79,9 @@
             progress("Opening " + f.name + "…", 0.5);
             open(SQL, new Uint8Array(await f.arrayBuffer()));
         });
+        if (CFG.lazy && location.protocol.startsWith("http")) {
+            try { return await openLazy(); } catch (e) { console.warn("lazy load failed, falling back", e); }
+        }
         try {
             open(SQL, await cachedDb(CFG.db));
         } catch (e) {
@@ -87,36 +90,46 @@
         }
     }
 
+    // Big archives on the web: read only the parts of the file a query touches, via HTTP range requests.
+    async function openLazy() {
+        progress("Connecting to the archive…", 0.3);
+        const worker = await createDbWorker([{ from: "jsonconfig", configUrl: new URL(CFG.lazy, location.href).toString() }],
+            new URL("vendor/httpvfs/sqlite.worker.js", location.href).toString(),
+            new URL("vendor/httpvfs/sql-wasm.wasm", location.href).toString());
+        lazy = worker.db;
+        await q("SELECT 1 FROM light LIMIT 1");
+        const info = Object.fromEntries((await q("SELECT k, v FROM info")).map((r) => [r.k, r.v]));
+        $("db-info").textContent = `archive built ${info.built || "?"} · ${(+info.entries || 0).toLocaleString()} entries · read on demand`;
+        db = true;
+        await start();
+    }
+
     function open(SQL, bytes) {
         try {
             db = new SQL.Database(bytes);
-            q("SELECT 1 FROM entries LIMIT 1");
+            db.exec("SELECT 1 FROM entries LIMIT 1");
         } catch (e) {
             progress("That file is not a WorldEndArchive database.");
             $("boot-pick").classList.remove("hidden");
             return;
         }
-        const info = Object.fromEntries(q("SELECT k, v FROM info").map((r) => [r.k, r.v]));
-        const n = q("SELECT COUNT(*) n FROM entries")[0].n;
+        const info = Object.fromEntries(db.exec("SELECT k, v FROM info")[0].values);
+        const n = db.exec("SELECT COUNT(*) FROM entries")[0].values[0][0];
         $("db-info").textContent = `archive built ${info.built || "?"} · ${n.toLocaleString()} entries · ${(bytes.length / 1e6).toFixed(0)} MB`;
-        // relevance for FTS4: weighted hit count per column (title, summary, keywords, body) from matchinfo('pcx')
-        db.create_function("rank", (blob) => {
-            const m = new Uint32Array(blob.buffer, blob.byteOffset, blob.byteLength / 4), p = m[0], c = m[1], w = [10, 4, 6, 1];
-            let s = 0;
-            for (let i = 0; i < p; i++) for (let j = 0; j < c; j++) {
-                const hits = m[2 + 3 * (i * c + j)], all = m[3 + 3 * (i * c + j)];
-                if (hits) s += (w[j] || 1) * (1 + Math.log(hits)) / Math.log(2 + all);
-            }
-            return s;
-        });
+        start();
+    }
+
+    async function start() {
+        hasLight = !!(await q("SELECT name FROM sqlite_master WHERE name = 'light'")).length;
         $("boot").classList.add("hidden");
         $("app").classList.remove("hidden");
-        setupUi();
-        route();
+        await setupUi();
+        await route();
     }
 
     // ---------- data ----------
-    function q(sql, params = []) {
+    async function q(sql, params = []) {
+        if (lazy) return await lazy.query(sql, params);
         const st = db.prepare(sql);
         st.bind(params);
         const out = [];
@@ -131,29 +144,62 @@
     }
 
     const LIST_COLS = "e.id, e.title, e.category, e.summary, e.kind, e.importance";
+    let hasLight = false;      // newer exports carry a small "light" table (no article bodies) for fast lists
+    const T = () => (hasLight ? "light" : "entries");
 
-    function search(text, offset) {
+    // relevance for FTS4: weighted hit count per column (title, summary, keywords, body) from matchinfo('pcx')
+    function rank(blob) {
+        const m = new Uint32Array(blob.buffer.slice(blob.byteOffset, blob.byteOffset + blob.byteLength)), p = m[0], c = m[1], w = [10, 4, 6, 1];
+        let s = 0;
+        for (let i = 0; i < p; i++) for (let j = 0; j < c; j++) {
+            const hits = m[2 + 3 * (i * c + j)], all = m[3 + 3 * (i * c + j)];
+            if (hits) s += (w[j] || 1) * (1 + Math.log(hits)) / Math.log(2 + all);
+        }
+        return s;
+    }
+
+    let lastSearch = { key: null, ids: [] };
+    async function search(text, offset) {
         const m = ftsQuery(text);
         if (!m) return [];
-        return q(`SELECT ${LIST_COLS} FROM (SELECT docid, rank(matchinfo(entries_fts, 'pcx')) r FROM entries_fts
-                  WHERE entries_fts MATCH ?) f JOIN entries e ON e.id = f.docid WHERE e.lang = ?
-                  ORDER BY f.r * (1 + e.importance * 0.15) DESC LIMIT ? OFFSET ?`,
-                 [m, lang, CFG.resultsPerPage, offset]);
+        const key = m + "|" + lang;
+        if (lastSearch.key !== key) {
+            // two steps: rank from the full-text index alone, then look up language/importance for the best
+            // candidates only (a join would make SQLite visit every row - slow when the file is read on demand)
+            const hits = await q("SELECT docid id, matchinfo(entries_fts, 'pcx') mi FROM entries_fts WHERE entries_fts MATCH ?", [m]);
+            hits.forEach((h) => { h.r = rank(h.mi); });
+            hits.sort((a, b) => b.r - a.r);
+            const top = hits.slice(0, 1500), ids = top.map((h) => h.id).sort((a, b) => a - b);
+            const meta = new Map();
+            for (let i = 0; i < ids.length; i += 500) {
+                const part = ids.slice(i, i + 500);
+                for (const r of await q(`SELECT id, lang, importance FROM ${T()} WHERE id IN (${part.join(",")})`)) meta.set(r.id, r);
+            }
+            const mine = top.filter((h) => meta.get(h.id)?.lang === lang);
+            mine.forEach((h) => { h.r *= 1 + meta.get(h.id).importance * 0.15; });
+            mine.sort((a, b) => b.r - a.r);
+            lastSearch = { key, ids: mine.map((h) => h.id) };
+        }
+        const page = lastSearch.ids.slice(offset, offset + CFG.resultsPerPage);
+        if (!page.length) return [];
+        const rows = await q(`SELECT ${LIST_COLS} FROM ${T()} e WHERE e.id IN (${page.map(() => "?").join(",")})`, page);
+        const pos = new Map(page.map((id, i) => [id, i]));
+        return rows.sort((a, b) => pos.get(a.id) - pos.get(b.id));
     }
 
     function byCategory(cat, offset) {
-        return q(`SELECT ${LIST_COLS} FROM entries e WHERE e.lang = ? AND e.category = ?
+        return q(`SELECT ${LIST_COLS} FROM ${T()} e WHERE e.lang = ? AND e.category = ?
                   ORDER BY e.importance DESC, e.title LIMIT ? OFFSET ?`, [lang, cat, CFG.resultsPerPage, offset]);
     }
 
     function essentials(offset) {
-        return q(`SELECT ${LIST_COLS} FROM entries e WHERE e.lang = ? ORDER BY e.importance DESC,
+        return q(`SELECT ${LIST_COLS} FROM ${T()} e WHERE e.lang = ? ORDER BY e.importance DESC,
                   CASE WHEN e.kind = 'howto' THEN 0 ELSE 1 END, e.title LIMIT ? OFFSET ?`, [lang, CFG.resultsPerPage, offset]);
     }
 
     // ---------- UI ----------
-    function setupUi() {
-        cats = q("SELECT category, COUNT(*) n FROM entries WHERE lang = ? GROUP BY category ORDER BY n DESC", [lang]);
+    async function setupUi() {
+        cats = await q(`SELECT category, COUNT(*) n FROM ${T()} WHERE lang = ? GROUP BY category ORDER BY n DESC`, [lang]);
         $("cats").innerHTML = cats.map((c) => `<button data-cat="${esc(c.category)}">${esc(c.category)}</button>`).join("");
         $("cats").onclick = (ev) => {
             const c = ev.target.dataset.cat;
@@ -161,11 +207,11 @@
         };
         document.querySelectorAll(".lang button").forEach((b) => {
             b.classList.toggle("on", b.dataset.lang === lang);
-            b.onclick = () => {
+            b.onclick = async () => {
                 lang = b.dataset.lang;
                 store.set("wea-lang", lang);
                 document.documentElement.lang = lang;
-                setupUi();
+                await setupUi();
                 route();
             };
         });
@@ -187,15 +233,16 @@
             <span class="sum">${esc(r.summary)}</span></a></li>`).join("");
     }
 
-    function showList(heading, fetchPage) {
+    async function showList(heading, fetchPage) {
         let offset = 0;
-        const rows = fetchPage(0);
+        $("view").innerHTML = '<p class="muted">…</p>';
+        const rows = await fetchPage(0);
         $("view").innerHTML = `<section><h2>${esc(heading)}</h2><ul class="link-list" id="list">${listHtml(rows)}</ul>
             ${rows.length === CFG.resultsPerPage ? '<button class="button more" id="more">Show more</button>' : ""}</section>`;
         const more = $("more");
-        if (more) more.onclick = () => {
+        if (more) more.onclick = async () => {
             offset += CFG.resultsPerPage;
-            const next = fetchPage(offset);
+            const next = await fetchPage(offset);
             $("list").insertAdjacentHTML("beforeend", listHtml(next));
             if (next.length < CFG.resultsPerPage) more.remove();
         };
@@ -216,10 +263,10 @@
         return html;
     }
 
-    function showEntry(id) {
-        const e = q("SELECT * FROM entries WHERE id = ?", [id])[0];
+    async function showEntry(id) {
+        const e = (await q("SELECT * FROM entries WHERE id = ?", [id]))[0];
         if (!e) { $("view").innerHTML = '<p class="muted">Entry not found.</p>'; return; }
-        const other = q("SELECT id, lang FROM entries WHERE slug = ? AND id != ?", [e.slug, e.id]);
+        const other = await q(`SELECT id, lang FROM ${T()} WHERE slug = ? AND id != ?`, [e.slug, e.id]);
         let warnings = [];
         try { warnings = JSON.parse(e.warnings || "[]"); } catch { }
         const src = e.source_url ? `<a href="${esc(e.source_url)}" target="_blank" rel="noopener">${esc(e.source_title)}</a>` : esc(e.source_title);
@@ -236,7 +283,7 @@
         scrollTo(0, 0);
     }
 
-    function route() {
+    async function route() {
         const h = decodeURIComponent(location.hash.slice(1) || "/");
         const [, kind, arg = ""] = h.match(/^\/(\w)?\/?(.*)$/) || [];
         document.querySelectorAll("#cats button").forEach((b) => b.classList.toggle("on", kind === "c" && b.dataset.cat === arg));
