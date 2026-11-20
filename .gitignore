@@ -6,3 +6,4 @@ node_modules/
 *.part
 reader/data/archive.db
 reader/data/archive/
+.claude/

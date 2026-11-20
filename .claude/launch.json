@@ -1,1 +1,0 @@
-{"version":"0.0.1","configurations":[{"name":"lazytest","runtimeExecutable":"npx","runtimeArgs":["-y","http-server@14.1.1","/private/tmp/claude-501/-Users-neo-WorldEndArchive-V2/b961a123-4288-483b-96ff-25be30354182/scratchpad/site","-p","8765","-c-1","-s"],"port":8765}]}
