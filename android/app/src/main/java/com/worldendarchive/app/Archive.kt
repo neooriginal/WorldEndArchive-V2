@@ -7,6 +7,11 @@ import java.io.File
 
 data class Row(val id: Long, val title: String, val category: String, val summary: String, val kind: String)
 
+data class Place(
+    val id: Long, val name: String, val category: String, val importance: Int, val lat: Double, val lon: Double,
+    val summary: String = "", val features: List<String> = emptyList(), val city: String? = null, val country: String? = null,
+)
+
 data class Entry(
     val id: Long, val slug: String, val lang: String, val title: String, val category: String, val kind: String,
     val summary: String, val body: String, val warnings: List<String>, val importance: Int,
@@ -74,6 +79,40 @@ class Archive private constructor(private val db: SQLiteDatabase) {
         Entry(c.getLong(0), slug, c.getString(2), c.getString(3), c.getString(4), c.getString(5), c.getString(6),
             c.getString(7), warnings, c.getInt(9), c.getString(10) ?: "", c.getString(11), c.getString(12) ?: "", other)
     }
+
+    // ---------------------------------------------------------------------------------------------- map layer
+    val hasPlaces: Boolean by lazy {
+        db.rawQuery("SELECT 1 FROM sqlite_master WHERE name = 'places'", null).use { it.moveToFirst() }
+    }
+
+    fun placeCategories(lang: String): List<Pair<String, Int>> = if (!hasPlaces) emptyList() else
+        db.rawQuery("SELECT category, COUNT(*) FROM places WHERE lang = ? GROUP BY category ORDER BY 2 DESC", arrayOf(lang)).use { c ->
+            buildList { while (c.moveToNext()) add(c.getString(0) to c.getInt(1)) }
+        }
+
+    fun places(lang: String, lat0: Double, lat1: Double, lon0: Double, lon1: Double, minImportance: Int, category: String?, limit: Int = 600): List<Place> {
+        if (!hasPlaces) return emptyList()
+        val sql = "SELECT id, name, category, importance, lat, lon FROM places WHERE lang = ? AND lat BETWEEN ? AND ? AND lon BETWEEN ? AND ? " +
+            "AND importance >= ?" + (if (category != null) " AND category = ?" else "") + " ORDER BY importance DESC LIMIT $limit"
+        val args = mutableListOf(lang, lat0.toString(), lat1.toString(), lon0.toString(), lon1.toString(), minImportance.toString())
+        if (category != null) args += category
+        return db.rawQuery(sql, args.toTypedArray()).use { c ->
+            buildList { while (c.moveToNext()) add(Place(c.getLong(0), c.getString(1) ?: "", c.getString(2) ?: "", c.getInt(3), c.getDouble(4), c.getDouble(5))) }
+        }
+    }
+
+    fun place(id: Long): Place? = db.rawQuery(
+        "SELECT id, name, category, importance, lat, lon, summary, features, city, country FROM places WHERE id = ?", arrayOf(id.toString()),
+    ).use { c ->
+        if (!c.moveToFirst()) return null
+        val feats = runCatching { val a = JSONArray(c.getString(7) ?: "[]"); List(a.length()) { a.getString(it) } }.getOrDefault(emptyList())
+        Place(c.getLong(0), c.getString(1) ?: "", c.getString(2) ?: "", c.getInt(3), c.getDouble(4), c.getDouble(5),
+            c.getString(6) ?: "", feats, c.getString(8), c.getString(9))
+    }
+
+    fun searchPlace(lang: String, text: String): Place? = if (!hasPlaces || text.isBlank()) null else
+        db.rawQuery("SELECT id FROM places WHERE lang = ? AND name LIKE ? ORDER BY importance DESC LIMIT 1", arrayOf(lang, "%$text%"))
+            .use { c -> if (c.moveToFirst()) place(c.getLong(0)) else null }
 
     companion object {
         fun open(ctx: Context): Archive {

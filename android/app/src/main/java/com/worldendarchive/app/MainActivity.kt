@@ -48,6 +48,7 @@ sealed interface Screen {
     data class Category(val name: String) : Screen
     data class Article(val id: Long) : Screen
     data class Guide(val index: Int) : Screen
+    data object Map : Screen
 }
 
 class MainActivity : ComponentActivity() {
@@ -91,6 +92,7 @@ fun App(ctx: Context) {
                     is Screen.Category -> ListScreen(s.name, a.byCategory(s.name, lang), lang, back = { stack.removeAt(stack.lastIndex) }) { stack.add(it) }
                     is Screen.Article -> ArticleScreen(a, s.id, lang, back = { stack.removeAt(stack.lastIndex) }) { stack[stack.lastIndex] = it }
                     is Screen.Guide -> GuideScreen(highlights(lang)[s.index], lang) { stack.removeAt(stack.lastIndex) }
+                    Screen.Map -> MapScreen(a, lang) { stack.removeAt(stack.lastIndex) }
                 }
             }
         }
@@ -134,6 +136,7 @@ fun HomeScreen(a: Archive, lang: String, query: String, onQuery: (String) -> Uni
                     items(guides.size) { i -> GuideCard(guides[i]) { open(Screen.Guide(i)) } }
                 }
             }
+            item { MapCard(a, de) { open(Screen.Map) } }
             item { SectionTitle(if (de) "Kategorien" else "Categories") }
             item {
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -187,6 +190,23 @@ fun GuideCard(h: Highlight, onClick: () -> Unit) {
         Spacer(Modifier.height(6.dp))
         Text(h.title, color = C.text, fontWeight = FontWeight.Bold, fontSize = 17.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
         Text(h.teaser, color = C.muted, fontSize = 13.sp, lineHeight = 18.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+@Composable
+fun MapCard(a: Archive, de: Boolean, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(18.dp)
+    Row(Modifier.padding(top = 14.dp).fillMaxWidth().clip(shape)
+        .background(Brush.linearGradient(listOf(C.cyan.copy(alpha = 0.16f), C.purple.copy(alpha = 0.14f))))
+        .border(1.dp, C.cyan.copy(alpha = 0.35f), shape).clickable(onClick = onClick).padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text("🗺️", fontSize = 30.sp)
+        Spacer(Modifier.width(14.dp))
+        Column {
+            Text(if (de) "Offline-Karte & Kompass" else "Offline map & compass", color = C.text, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+            Text(if (a.hasPlaces) (if (de) "Krankenhäuser, Schutzräume, Rettung – mit Entfernung und Richtung" else "Hospitals, shelters, rescue – with distance and direction")
+                else (if (de) "Weltkarte, Städte, deine Position und Kompass" else "World map, cities, your position and a compass"),
+                color = C.muted, fontSize = 13.sp, lineHeight = 18.sp)
+        }
     }
 }
 

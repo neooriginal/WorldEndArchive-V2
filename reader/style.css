@@ -185,3 +185,28 @@ footer p + p { margin-top: 0.3rem; }
     .container { padding: 1.5rem 1rem; }
     article { padding: 1.1rem; }
 }
+
+/* Offline map */
+.map-chip { border-color: rgba(0, 242, 255, 0.35) !important; }
+.map-wrap { display: flex; flex-direction: column; gap: 0.8rem; }
+.map-top input { width: 100%; padding: 0.7rem 1rem; border-radius: 12px; border: 1px solid var(--glass-border); background: var(--glass-bg); color: var(--text-primary); font: inherit; }
+.map-top .chips { margin-top: 0.6rem; }
+.map-stage { position: relative; height: min(70vh, 640px); padding: 0 !important; overflow: hidden; touch-action: none; }
+.map-stage.full { position: fixed; inset: 0; height: 100dvh; z-index: 50; border-radius: 0; }
+.map-stage canvas { display: block; cursor: grab; }
+.map-stage canvas:active { cursor: grabbing; }
+.map-ctrl { position: absolute; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 6px; }
+.map-ctrl button { width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(5, 5, 5, 0.75); color: #fff; font-size: 1.1rem; cursor: pointer; backdrop-filter: blur(8px); }
+.map-ctrl button:hover { border-color: var(--accent-primary); }
+.map-status { position: absolute; left: 10px; bottom: 8px; background: rgba(5, 5, 5, 0.6); padding: 2px 8px; border-radius: 8px; }
+.map-note { padding: 0.8rem 1rem; border: 1px dashed var(--glass-border); border-radius: 12px; }
+.place-card ul { margin: 0.4rem 0 0.6rem 1.2rem; }
+.compass { position: absolute; left: 12px; top: 12px; width: 170px; padding: 10px; border-radius: 16px; background: rgba(5, 5, 5, 0.78); border: 1px solid var(--glass-border); backdrop-filter: blur(8px); text-align: center; cursor: pointer; }
+.compass .dial { position: relative; width: 120px; height: 120px; margin: 0 auto; border-radius: 50%; border: 2px solid rgba(0, 242, 255, 0.45); transition: transform 0.15s linear; }
+.compass .dial span { position: absolute; font: 700 0.75rem var(--font-mono); color: var(--text-secondary); }
+.compass .dial .n { top: 4px; left: 50%; transform: translateX(-50%); color: #ff5c6c; }
+.compass .dial .s { bottom: 4px; left: 50%; transform: translateX(-50%); }
+.compass .dial .e { right: 6px; top: 50%; transform: translateY(-50%); }
+.compass .dial .w { left: 6px; top: 50%; transform: translateY(-50%); }
+.compass .arrow { position: absolute; left: 50%; top: 70px; width: 0; height: 0; border-left: 9px solid transparent; border-right: 9px solid transparent; border-bottom: 52px solid var(--accent-primary); transform-origin: 50% 100%; filter: drop-shadow(0 0 6px rgba(0, 242, 255, 0.6)); }
+.compass .readout { margin-top: 8px; font-size: 0.8rem; line-height: 1.35; }

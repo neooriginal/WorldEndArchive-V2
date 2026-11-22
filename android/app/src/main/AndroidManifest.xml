@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- no INTERNET permission: the app works fully offline by design -->
+    <!-- no INTERNET permission: the app works fully offline by design. Location is GPS only, for the offline map. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+    <uses-feature android:name="android.hardware.sensor.compass" android:required="false" />
     <application
         android:label="WorldEndArchive"
         android:icon="@mipmap/ic_launcher"

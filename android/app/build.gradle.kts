@@ -7,8 +7,10 @@ plugins {
 // The archive is not duplicated in the repo: it is copied from the Reader's slot (reader/data/archive.db) at build time.
 val archiveSrc = rootProject.file("../reader/data/archive.db")
 val archiveDir = layout.buildDirectory.dir("generated/archive")
+val basemapSrc = rootProject.file("../reader/data/basemap.json")
 val copyArchive by tasks.registering(Copy::class) {
     from(archiveSrc)
+    from(basemapSrc)
     into(archiveDir)
     doFirst { require(archiveSrc.exists()) { "missing ${archiveSrc.path} - put the latest export there" } }
 }

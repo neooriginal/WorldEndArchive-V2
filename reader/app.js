@@ -200,8 +200,10 @@
     // ---------- UI ----------
     async function setupUi() {
         cats = await q(`SELECT category, COUNT(*) n FROM ${T()} WHERE lang = ? GROUP BY category ORDER BY n DESC`, [lang]);
-        $("cats").innerHTML = cats.map((c) => `<button data-cat="${esc(c.category)}">${esc(c.category)}</button>`).join("");
+        $("cats").innerHTML = `<button data-map="1" class="map-chip">🗺️ ${lang === "de" ? "Karte" : "Map"}</button>` +
+            cats.map((c) => `<button data-cat="${esc(c.category)}">${esc(c.category)}</button>`).join("");
         $("cats").onclick = (ev) => {
+            if (ev.target.dataset.map) { location.hash = "#/m/"; return; }
             const c = ev.target.dataset.cat;
             if (c) location.hash = "#/c/" + encodeURIComponent(c);
         };
@@ -288,6 +290,9 @@
         const [, kind, arg = ""] = h.match(/^\/(\w)?\/?(.*)$/) || [];
         document.querySelectorAll("#cats button").forEach((b) => b.classList.toggle("on", kind === "c" && b.dataset.cat === arg));
         const de = lang === "de";
+        document.querySelector("#cats .map-chip")?.classList.toggle("on", kind === "m");
+        if (kind !== "m" && window.WEAMap) window.WEAMap.stop();
+        if (kind === "m") return window.WEAMap.render($("view"), { q, lang });
         if (kind === "e") return showEntry(+arg);
         if (kind === "s" && arg) {
             if ($("search-input").value.trim() !== arg) $("search-input").value = arg;

@@ -31,6 +31,7 @@ No server. No signal. No power grid. Just a phone and the knowledge of those who
 *   **Discoveries** - science, medicine and the ideas that built our world.
 *   **Craft** - farming, preserving food, tools, knots, recipes.
 *   **History & nature** - where we come from, and what grows around us.
+*   **The map** - a world that needs no signal: the nearest hospital, shelter or hut, how far, and which way to walk.
 
 ## Open the Archive
 
@@ -49,7 +50,16 @@ Download `WorldEndArchive.apk` from the [latest release](../../releases/latest) 
 Everything is inside. It will never need the internet again.
 
 It also carries guides for the first hours of darkness: keeping your phone alive, what matters first,
-safe water, what to do when lost, and how to call for help.
+safe water, what to do when lost, and how to call for help. And a map with a compass, so you can find
+your way to help when there are no signposts left.
+
+</details>
+
+<details>
+<summary><strong>On Hugging Face</strong></summary>
+
+The whole archive, open for anyone to read, study or build upon:
+[huggingface.co/datasets/neooriginal/WorldEndArchive-V2](https://huggingface.co/datasets/neooriginal/WorldEndArchive-V2).
 
 </details>
 
@@ -77,3 +87,5 @@ ensure it is ready for when it is not.
 ---
 
 *Preserving the past, for the future.*
+
+<p align="center"><sub>Made with ❤️ by <a href="https://github.com/neooriginal">Neo</a></sub></p>
