@@ -28,6 +28,9 @@ CREATE INDEX places_imp ON places(lang, importance DESC);
 CREATE INDEX places_name ON places(lang, name);
 """)
 db.execute("INSERT OR REPLACE INTO info(k, v) VALUES('places', ?)", (str(n),))
+db.execute("INSERT OR REPLACE INTO info(k, v) VALUES('places_license', ?)",
+           ("The places table is built from OpenStreetMap data, (c) OpenStreetMap contributors, ODbL 1.0 "
+            "(https://opendatacommons.org/licenses/odbl/1-0/). Each place lists its OpenStreetMap link in source_url.",))
 db.commit()
 db.execute("VACUUM")
 print(f"{n:,} places merged into {db_path}")

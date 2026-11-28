@@ -18,6 +18,14 @@ Every entry is a plain-language rewrite of one source. Each row keeps its origin
 Entries were written and translated (English ↔ German) by AI models and then checked by other models against the
 source. Wording therefore differs from the originals; the facts come from them.
 
+## The map layer
+
+The `places` table (hospitals, shelters, rescue stations, huts, airports, ports, power plants, dams, embassies…) is
+built from [OpenStreetMap](https://www.openstreetmap.org) data, © OpenStreetMap contributors, available under the
+**Open Database License (ODbL) 1.0**: https://opendatacommons.org/licenses/odbl/1-0/. Short summaries and categories
+were added by AI models. Each place keeps its OpenStreetMap link in `source_url` and its object id in `osm`. If you
+share or build on the `places` table, credit OpenStreetMap contributors and keep it under the ODbL.
+
 ## If you share or build on the data
 
 - Credit WorldEndArchive and the original sources (keeping the `source_*` columns is enough).

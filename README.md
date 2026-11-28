@@ -76,6 +76,7 @@ release. Replace it with a newer one and run the workflows - the website and the
 The code is free under the [MIT License](LICENSE).
 The knowledge is shared under [CC BY-SA 4.0](DATA_LICENSE.md), as it came to us - from Wikipedia, Wikibooks and
 public-domain field manuals. Every entry remembers where it came from.
+The map's places come from [OpenStreetMap](https://www.openstreetmap.org/copyright) (© OpenStreetMap contributors, [ODbL](DATA_LICENSE.md#the-map-layer)).
 
 This archive is a companion, not a doctor. When real help can be reached, reach for it.
 
